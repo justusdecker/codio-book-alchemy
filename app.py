@@ -17,13 +17,11 @@ db.init_app(app)
     
 with app.app_context():
     db.create_all()
+
 @app.route('/')
 def index():
-    # Example: Fetch all books from the database
-    
-    print(Author.query.all())
-    print(Author.query.all()[Book.query.all()[0].author_id].name)
     books = Book.query.all()
+    #sorted(books,key=)
     return render_template('home.html', books=books,authors = Author.query.all())
 
 
@@ -44,7 +42,7 @@ def add_book():
     if request.method == 'POST':
         
         title = request.form['title']
-        author = request.form['author']
+        author = int(request.form['author'].split('_')[1])
         isbn = request.form['isbn']
         publication_year = request.form['publication_year']
         new_book = Book(title=title, author_id=author, publication_year=publication_year,isbn=isbn)
