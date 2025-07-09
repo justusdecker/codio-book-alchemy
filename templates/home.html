@@ -8,7 +8,8 @@
   <body>
 
     {% for book in books %}
-    <div> <h3>{{ book.title }}</h3>
+    <div> 
+      <h3>{{ book.title }} - {{ authors[book.author_id].name }}</h3>
     </div>
     {% endfor %}
 
