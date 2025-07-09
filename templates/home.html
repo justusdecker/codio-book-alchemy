@@ -6,7 +6,13 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
   </head>
   <body>
-
+    <form method="POST">
+        <select name="sorting_method" id="sorting_method">
+          <option value="author">Author</option>
+          <option value="title">Title</option>
+        </select>
+        <button type="submit">sort</button>
+    </form>
     {% for book in books %}
     <div> 
       <h3>{{ book.title }} - {{ authors[book.author_id-1].name }}</h3>

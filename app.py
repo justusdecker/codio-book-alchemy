@@ -2,7 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 import os
 from data_models import db, Book, Author
-
+from copy import deepcopy
 app = Flask(__name__)
 
 # OperationError fix
@@ -11,18 +11,68 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'da
 
 #app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data/library.sqlite' 
 
-
+class AsSortWorkAround:
+    """
+    The sorting works correctly at first:
+    
+        sorted_books = sorted(zip(books, author_names),key=lambda x: x[1].lower())
+    
+    - (<Book 4>, 'Anika Decker') 4
+    - (<Book 5>, 'Justus Decker') 5
+    - (<Book 1>, 'Martin Luther') 1
+    - (<Book 3>, 'Ralf König') 3
+    - (<Book 2>, 'Tommy Jaud') 2
+    
+    This gives me the same problem:
+    
+        books = Book.query.select_from(Book, Author).order_by(Author.name.lower()).all()
+    
+    The list breaks in the next line(idk how to fix so here is a workaround):
+    
+        sec_books = [book[0] for book in sorted_books] #unsorted why?
+    
+    - <Book 4> Vollidiot Tommy Jaud 1 4
+    - <Book 5> Zitronenröllchen Ralf König 2 5
+    - <Book 1> ImABook Martin Luther 0 1
+    - <Book 3> Zwei vernünftige Erwachsene, die sich mal nackt gesehen haben Anika Decker 3 3
+    - <Book 2> Why am i doing this 3AM in the morning? Justus Decker 4 2
+    """
 
 db.init_app(app)
     
 with app.app_context():
     db.create_all()
 
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 def index():
     books = Book.query.all()
-    #sorted(books,key=)
-    return render_template('home.html', books=books,authors = Author.query.all())
+    authors = Author.query.all()
+    if request.method == 'POST':
+        sorting_method = request.form['sorting_method']
+        if sorting_method == 'title':
+            sec_books = sorted(books,key=lambda x: x.title)
+        if sorting_method == 'author':
+            author_names = [author.name for author in authors]
+
+            books = [
+                {
+                    'title': book.title,
+                    'isbn': book.isbn, 
+                    'publication_year': book.publication_year,
+                    'author_id':book.author_id,
+                    'author': author_names[book.author_id-1]
+                    } for book in books]
+            
+            books = sorted(books,key=lambda x: x['author'])
+
+            sec_books = [AsSortWorkAround() for attrs in books]
+            
+            # Sets the same attributes as Book + author
+            for idx,wa in enumerate(sec_books):
+                for attr in books[idx]:
+                    if attr == 'author': continue # removing it because we dont it twice
+                    wa.__setattr__(attr,books[idx][attr])
+    return render_template('home.html', books=sec_books,authors = authors)
 
 
 @app.route('/add_author', methods=['GET', 'POST'])
