@@ -36,6 +36,9 @@ class AsSortWorkAround:
     - <Book 1> ImABook Martin Luther 0 1
     - <Book 3> Zwei vernünftige Erwachsene, die sich mal nackt gesehen haben Anika Decker 3 3
     - <Book 2> Why am i doing this 3AM in the morning? Justus Decker 4 2
+    
+    I spend 2 hours to fix this crap!
+    Please send help!
     """
 
 db.init_app(app)
@@ -47,7 +50,9 @@ with app.app_context():
 def index():
     books = Book.query.all()
     authors = Author.query.all()
+    sqflag = False # search_query_flag to determine when the user is searching
     if request.method == 'POST':
+
         sorting_method = request.form['sorting_method']
         if sorting_method == 'title':
             sec_books = sorted(books,key=lambda x: x.title)
@@ -72,7 +77,14 @@ def index():
                 for attr in books[idx]:
                     if attr == 'author': continue # removing it because we dont it twice
                     wa.__setattr__(attr,books[idx][attr])
-    return render_template('home.html', books=sec_books,authors = authors)
+    
+    search_query = request.args.get('search_keyword', '')
+    if search_query and not search_query.isspace():
+        sec_books = Book.query.filter(Book.title.ilike(f'%{search_query}%')).all()
+        sqflag = True
+    if not 'sec_books' in locals():
+        sec_books = books
+    return render_template('home.html', books=sec_books,authors = authors,sqflag=sqflag)
 
 
 @app.route('/add_author', methods=['GET', 'POST'])
