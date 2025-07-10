@@ -113,6 +113,12 @@ def add_book():
         return redirect('/')
     return render_template('add_book.html',authors=Author.query.all())
 
+@app.route('/book/<int:book_id>/delete', methods=['POST'])
+def delete_book(book_id: int):
+    book = Book.query.get_or_404(book_id)
+    db.session.delete(book)
+    db.session.commit()
+    return redirect('/')
 if __name__ == '__main__':
 
     app.run(debug=True)
